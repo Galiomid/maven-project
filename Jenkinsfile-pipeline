@@ -128,7 +128,7 @@ stage('build ') {
 
             steps {
                sh '''
-            ls   web/target
+            
            docker build -t devopseasylearning2021/nigieu:$ImageTAG .
            
                '''
