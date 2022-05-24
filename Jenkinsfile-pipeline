@@ -42,7 +42,9 @@ pipeline {
 
             steps {
                sh '''
-               rm -rf webapp/target/webapp.war || true
+	       rm -rf webapp.war
+               rm -rf webapp/target/
+	      ls -l webapp
               mvn clean
                '''
             }
@@ -92,6 +94,8 @@ stage('package') {
             steps {
                sh '''
          mvn package
+	 ls -l webapp/
+	 ls -l webapp/target/
                '''
             }
         }
@@ -179,7 +183,8 @@ stage('build ') {
     stage('Deploy with docker ') {
             steps {
                sh '''
-               docker run -d -p 8089:8080 devopseasylearning2021/eric:$ImageTAG 
+               docker rm -f deploy || true 
+               docker run -d --name deploy -p 580:8080 devopseasylearning2021/eric:$ImageTAG 
                curl ifconfig.co 
                 '''
             }
