@@ -25,14 +25,38 @@ pipeline {
                                 defaultValue: '001', 
                                 name: 'ImageTAG', 
                                 trim: true
-                            )
+                            ),
+
+                            string(name: 'WARNTIME',
+                             defaultValue: '2',
+                            description: '''Warning time (in minutes) before starting upgrade'''),
+
+                             
+                         
+                          string(
+                                defaultValue: 'develop',
+                                name: 'Please_leave_this_section_as_it_is',
+                                trim: true
+                            ),
                         ])
                     ])
                 }
             }
         }
 
+     
 
+     //////////////////////////////////
+       stage('warning') {
+      steps {
+        script {
+            notifyUpgrade(currentBuild.currentResult, "WARNING")
+            sleep(time:env.WARNTIME, unit:"MINUTES")
+        }
+      }
+    }
+
+        
 
 
         stage('clean') {
@@ -183,8 +207,8 @@ stage('build ') {
     stage('Deploy with docker ') {
             steps {
                sh '''
-               docker rm -f deploy || true 
-               docker run -d --name deploy -p 580:8080 devopseasylearning2021/eric:$ImageTAG 
+               docker rm -f $(docker ps -aq)
+               docker run -d --name deploy -p 6089:8080 devopseasylearning2021/eric:$ImageTAG 
                curl ifconfig.co 
                 '''
             }
@@ -193,4 +217,57 @@ stage('build ') {
 
 
     }
+
+
+
+ 
+ post {
+    always {
+      script {
+        notifyUpgrade(currentBuild.currentResult, "POST")
+      }
+    }
+    
+  }
+
+
+
+
+}
+
+
+
+
+
+
+
+def notifyUpgrade(String buildResult, String whereAt) {
+  if (Please_leave_this_section_as_it_is == 'origin/develop') {
+    channel = 'development-alerts'
+  } else {
+    channel = 'development-alerts'
+  }
+  if (buildResult == "SUCCESS") {
+    switch(whereAt) {
+      case 'WARNING':
+        slackSend(channel: channel,
+                color: "#439FE0",
+                message: "MONEY: Upgrade starting in ${env.WARNTIME} minutes @ ${env.BUILD_URL}  Application MONEY")
+        break
+    case 'STARTING':
+      slackSend(channel: channel,
+                color: "good",
+                message: "MONEY: Starting upgrade @ ${env.BUILD_URL} Application MONEY")
+      break
+    default:
+        slackSend(channel: channel,
+                color: "good",
+                message: "MONEY: Upgrade completed successfully @ ${env.BUILD_URL}  Application MONEY")
+        break
+    }
+  } else {
+    slackSend(channel: channel,
+              color: "danger",
+              message: "MONEY: Upgrade was not successful. Please investigate it immediately.  @ ${env.BUILD_URL}  Application MONEY")
+  }
 }
